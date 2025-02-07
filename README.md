@@ -1,61 +1,77 @@
-# Street Tree Census
+# Street tree census
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
+Данный проект нацелен на создание Deep Learning модели с использованием библиотеки PyTorch, которая решает задачу определения состояния деревьев, используя [NY 2015 Street Tree Census - Tree Data](https://www.kaggle.com/datasets/new-york-city/ny-2015-street-tree-census-tree-data/data). 
 
-Prediction of tree health
+## Запуск
+* Соберите Docker image с помощью `docker build . -t tree_census`
+* Запустите Docker container `docker run --rm -it -p 80:80 tree_census`
+* Используйте `http://127.0.0.1:80/docs` для доступа к API модели
 
-## Project Organization
+## Данные
+В проекте используется [NY 2015 Street Tree Census - Tree Data](https://www.kaggle.com/datasets/new-york-city/ny-2015-street-tree-census-tree-data/data), который содержит данные об деревьях Нью Йорка. Перепись деревьев 2015 года, проведенная волонтерами и сотрудниками NYC Parks & Recreation и иными организациями. Собранные данные о деревьях включают виды деревьев, диаметр и здоровья. Доступны сопроводительные данные, показывающие статус сбора и публикации данных по всему городу.
 
-```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
-│
-├── models             <- Trained and serialized models, model predictions, or model summaries
-│
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
-│
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         street_tree_census and configuration for tools like black
-│
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-│
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
-├── setup.cfg          <- Configuration file for flake8
-│
-└── street_tree_census   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes street_tree_census a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
-```
+## Deep Learning модель
+Архитектура представляет собой многослойный перцептрон (MLP), который лучше работает с табличными данными. В отличие от сверточных (CNN) или рекуррентных (RNN) сетей, MLP способен эффективно моделировать сложные зависимости между признаками без предположений о пространственной или временной структуре данных. Так же, MLP — хорошая альтернатива градиентному бустингу в случае, если есть достаточное количество данных и информативных признаков.
 
---------
+### Последовательное увеличение и уменьшение размерности
 
+Первые слои постепенно увеличивают количество нейронов (256 → 512 → 1024), что позволяет модели сформировать более сложные представления входных данных.
+
+Затем идет уменьшение размерности (1024 → 512 → 256 → 64), что помогает обобщить информацию и избежать переобучения.
+
+Последний слой с 64 нейронами перед выходом выполняет роль сжатия признакового пространства перед финальным предсказанием.
+
+### Batch Normalization и Dropout
+
+*Batch Normalization* ускоряет обучение, стабилизируя распределение активаций и уменьшая внутреннее ковариационное смещение.
+
+*Dropout* предотвращает переобучение, отключая случайные нейроны во время обучения, что делает модель более устойчивой.
+
+### ReLU в качестве функции активации
+
+Функция активации *ReLU* предотвращает проблему исчезающего градиента и ускоряет сходимость.
+
+Использование *ReLU* после нормализации данных (*BatchNorm1d*) позволяет эффективно передавать градиенты в глубоких слоях.
+
+## Инструменты и технологии 
+В ходе проекта использовались несколько инструментов и технологий, в том числе:
+
+ - **Python**: Язык программирования использовавшийся при реализации данного проекта.
+ - **PyTorch**: Для разработки Deep Learning модели
+ - **FastAPI**: Для создания API для доступа к модели.
+ - **Docker**: Использовался для контейнеризайии API модели.
+ - **Ruff**: Линтер использовавшийся в процессе реализации проекта.
+ - **Plotly**: Графическая библиотека Python позволяет создавать интерактивные графики.
+ - **Cookiecutter Data Science**: Инструмент для структурирование Data Science проектов.
+
+## Структура проекта
+`data/`: 
+- `raw/` Оригинальные исходные данные.
+
+- `processed/`: Обработанные и очищенные данные.
+
+`models/`: Файлы итоговой модели, препроцессора для входных данных и *label encoder* для меток классов.
+
+`notebooks/`: Здесь находятся Jupyter Notebooks с EDA, обучением baseline моделей (*DummyClassifier*, *XGBClassifier*), от которых я отталкивался при написании PyTorch модели, и ноутбук в котором проводились эксперименты с PyTorch моделью.
+
+`street_tree_census/`
+- `modeling/`
+    - `model.py`: Файл с архитектурой PyTorch модели.
+    - `train.py`: Код обучения модели.
+    
+        Для запуска файла выполнить `python -m street_tree_census.modeling.train`.
+    - `predict.py`: Файл для инференса модели.
+
+        Для запуска файла выполнить `python -m street_tree_census.modeling.predict`.
+- `config.py`: Файл с различными константами.
+- `dataset.py`: Код, который обрабатывает данные из `data/raw` и записывает их в `data/processed`.
+- `server.py`: Код с API логикой.
+- `query_exaple.py`: Пример использования API.
+
+`requirements.txt`: Файл с зависимостями.
+
+`Dockerfile`: Docker file для построения Docker image.
+
+## Requirements
+ - Python 3.12
+ - Dependencies listed in `requirements.txt`
